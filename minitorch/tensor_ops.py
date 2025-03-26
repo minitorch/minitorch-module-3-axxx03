@@ -380,7 +380,7 @@ def tensor_reduce(fn: Callable[[float, float], float]) -> Any:
             to_index(i, out_shape, out_idx)
             o_idx = index_to_position(out_idx, out_strides)
             for j in range(a_shape[reduce_dim]):
-                a_idx = copy.deepcopy(out_idx)
+                a_idx = np.zeros(len(out_idx), dtype=np.int32)
                 a_idx[reduce_dim] = j
                 a_pos = index_to_position(a_idx, a_strides)
                 out_storage[o_idx] = fn(out_storage[o_idx], a_storage[a_pos])

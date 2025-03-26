@@ -43,7 +43,10 @@ def index_to_position(index: Index, strides: Strides) -> int:
         Position in storage
     """
     # the general formula is that it is [s1 * ind1 + s2 * ind2, s3 * ind3
-    return np.dot(index, strides)
+    pos = 0
+    for i, s in zip(index, strides):
+        pos += i * s
+    return pos
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
     """
@@ -58,9 +61,10 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
+    product = 1.0
     for i in range(len(shape) - 1, -1, -1):
-        out_index[i] = ordinal % shape[i]
-        ordinal = ordinal // shape[i]
+        out_index[i] = int(ordinal % (shape[i] * product) // product)
+        product *= shape[i]
 
 
 def broadcast_index(

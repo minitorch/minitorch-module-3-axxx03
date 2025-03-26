@@ -4,6 +4,7 @@
 
 # 学习攻略： https://dezeming.top/wp-content/uploads/2022/02/MiniTorch-%E5%AD%A6%E4%B9%A0%E5%85%A8%E6%94%BB%E7%95%A5.pdf
 
+mkdir -p log
 rm -rf log/test.log
 
 # echo "******** Task 0.1 ********" >> log/test.log
@@ -45,5 +46,17 @@ rm -rf log/test.log
 # echo "******** Task 2.3 ********" >> log/test.log
 # pytest -m task2_3 >> log/test.log 2>&1
 
-echo "******** Task 2.4 ********" >> log/test.log
-pytest -m task2_4 >> log/test.log 2>&1
+# echo "******** Task 2.4 ********" >> log/test.log
+# pytest -m task2_4 >> log/test.log 2>&1
+
+# echo "******** Task 3.1 ********" >> log/test.log
+# NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_1 >> log/test.log 2>&1
+
+# echo "******** Task 3.2 ********" >> log/test.log
+# NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_2 >> log/test.log 2>&1
+
+# echo "******** Task 3.3 ********" >> log/test.log
+# NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_3 >> log/test.log 2>&1
+
+# echo "******** Task 3.4 ********" >> log/test.log
+# NUMBA_DISABLE_JIT=1 pytest tests/ -m task3_4 >> log/test.log 2>&1

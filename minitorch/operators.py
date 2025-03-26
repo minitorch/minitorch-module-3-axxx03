@@ -72,9 +72,10 @@ def log_back(x: float, y: float):
 
 def lt(x: float, y: float):
     # lt - Checks if one number is less than another
-    if eq(x, y):
+    if x < y:
+        return 1.0
+    else:
         return 0.0
-    return 1.0 if x < y else 0.0
 
 def leq(x: float, y: float):
     # x <= y
@@ -96,7 +97,9 @@ def prod(list1: List):
     return res
 
 def relu(x: float):
-    return max(0.0, x)
+    # Python 在查找函数时，会优先使用内置函数
+    # 即使你在同一文件中定义了 max 函数，直接调用 max(0.0, x) 时仍会使用内置的 max
+    return x if x > 0 else 0.0
 
 def relu_back(x: float, y: float):
     # relu_back - Computes the derivative of ReLU times a second arg

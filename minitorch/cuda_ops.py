@@ -173,8 +173,14 @@ def tensor_map(
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         in_index = cuda.local.array(MAX_DIMS, numba.int32)
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
-        # TODO: Implement for Task 3.3.
-        raise NotImplementedError("Need to implement for Task 3.3")
+        
+        if i > out_size:
+            return
+        
+        to_index(i, out_shape, out_index)
+        broadcast_index(out_index, out_shape, in_shape, in_index)
+        out[index_to_position(out_index, out_strides)] = \
+            fn(in_storage[index_to_position(in_index, in_strides)])
 
     return cuda.jit()(_map)  # type: ignore
 
@@ -216,8 +222,15 @@ def tensor_zip(
         b_index = cuda.local.array(MAX_DIMS, numba.int32)
         i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
 
-        # TODO: Implement for Task 3.3.
-        raise NotImplementedError("Need to implement for Task 3.3")
+        if i > out_size:
+            return
+
+        to_index(i, out_shape, out_index)
+        broadcast_index(out_index, out_shape, a_shape, a_index)
+        broadcast_index(out_index, out_shape, b_shape, b_index)
+        out[index_to_position(out_index, out_strides)] = \
+            fn(a_storage[index_to_position(a_index, a_strides)], \
+               b_storage[index_to_position(b_index, b_strides)])
 
     return cuda.jit()(_zip)  # type: ignore
 
@@ -248,10 +261,26 @@ def _sum_practice(out: Storage, a: Storage, size: int) -> None:
     cache = cuda.shared.array(BLOCK_DIM, numba.float64)
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     pos = cuda.threadIdx.x
+    out_pos = cuda.blockIdx.x
 
-    # TODO: Implement for Task 3.3.
-    raise NotImplementedError("Need to implement for Task 3.3")
+    if i < size and pos < BLOCK_DIM:
+        cache[pos] = a[i]
+    else:
+        cache[pos] = 0
 
+    cuda.syncthreads()
+    
+    # 利用二分法最大限度地进行并行计算
+    stride = BLOCK_DIM // 2
+    while stride > 0:
+        if pos >= stride:
+            return
+        cache[pos] += cache[pos + stride]
+        stride //= 2
+        cuda.syncthreads()
+
+    if pos == 0:
+        out[out_pos] = cache[0]
 
 jit_sum_practice = cuda.jit()(_sum_practice)
 
@@ -299,10 +328,35 @@ def tensor_reduce(
         out_index = cuda.local.array(MAX_DIMS, numba.int32)
         out_pos = cuda.blockIdx.x
         pos = cuda.threadIdx.x
-
-        # TODO: Implement for Task 3.3.
-        raise NotImplementedError("Need to implement for Task 3.3")
-
+        
+        to_index(out_pos, out_shape, out_index)
+        o_idx = index_to_position(out_index, out_strides)
+        
+        # Step1: 将 reduce_dim 维度上的数据加载到 shared memory
+        if pos < a_shape[reduce_dim]:
+            out_index[reduce_dim] = pos
+            cache[pos] = a_storage[index_to_position(out_index, a_strides)]
+        else:
+            # reduce_value: 
+            # - value for addition: 0
+            # - value for multiplication: 1
+            cache[pos] = reduce_value
+        
+        cuda.syncthreads()
+        
+        # Step2: 利用二分法最大限度地进行并行计算
+        stride = BLOCK_DIM // 2
+        while stride > 0:
+            if pos >= stride:
+                return
+            cache[pos] = fn(cache[pos], cache[pos + stride])
+            stride //= 2
+            cuda.syncthreads()
+        
+        # Step3: 将结果写入到 out 中
+        if pos == 0:    
+            out[o_idx] = cache[0]
+        
     return jit(_reduce)  # type: ignore
 
 
@@ -338,9 +392,30 @@ def _mm_practice(out: Storage, a: Storage, b: Storage, size: int) -> None:
 
     """
     BLOCK_DIM = 32
-    # TODO: Implement for Task 3.3.
-    raise NotImplementedError("Need to implement for Task 3.3")
+    a_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+    b_shared = cuda.shared.array((BLOCK_DIM, BLOCK_DIM), numba.float64)
+    
+    i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
+    j = cuda.blockIdx.y * cuda.blockDim.y + cuda.threadIdx.y
+    
+    pi = cuda.threadIdx.x
+    pj = cuda.threadIdx.y
+    
+    # Step 1: 将 a 和 b 的数据加载到 shared memory
+    if i < size and j < size:
+        a_shared[pi, pj] = a[i * size + j]
+        b_shared[pi, pj] = b[i * size + j]
 
+    cuda.syncthreads()
+
+    # Step 2: 计算 out[i, j]
+    if i < size and j < size:
+        total = 0.0
+        for k in range(size):
+            total += a_shared[pi, k] * b_shared[k, pj]
+        out[i * size + j] = total
+
+    
 
 jit_mm_practice = jit(_mm_practice)
 
@@ -407,8 +482,33 @@ def _tensor_matrix_multiply(
     #    a) Copy into shared memory for a matrix.
     #    b) Copy into shared memory for b matrix
     #    c) Compute the dot produce for position c[i, j]
-    # TODO: Implement for Task 3.4.
-    raise NotImplementedError("Need to implement for Task 3.4")
+    
+    I = out_shape[1]
+    J = out_shape[2]
+    K = a_shape[-1]
+    
+    total = 0.0
+    
+    # 因为矩阵更大，所以相较于 _mm_practice 多套了一层
 
+    for k in range(0, K, BLOCK_DIM):
+        # Step 1: 将 a 和 b 的数据加载到 shared memory
+        if i < I and pj + k < K:
+            a_pos = batch * a_batch_stride + i * a_strides[1] + (pj + k) * a_strides[2]
+            a_shared[pi, pj] = a_storage[a_pos]
+        if j < J and pi + k < K:
+            b_pos = batch * b_batch_stride + (pi + k) * b_strides[1] + j * b_strides[2]
+            b_shared[pi, pj] = b_storage[b_pos]
+
+        cuda.syncthreads()
+
+        # Step 2: 计算 out[i, j]
+        for pk in range(BLOCK_DIM):
+            if k + pk < K:
+                total += a_shared[pi, pk] * b_shared[pk, pj]
+
+    if i < I and j < J:
+        out_pos = batch * out_strides[0] + i * out_strides[1] + j * out_strides[2]
+        out[out_pos] = total
 
 tensor_matrix_multiply = jit(_tensor_matrix_multiply)
