@@ -2,18 +2,16 @@
 Be sure you have minitorch installed in you Virtual Env.
 >>> pip install -Ue .
 """
+
 import random
 
 import minitorch
 
-import copy
 
 class Network(minitorch.Module):
     def __init__(self, hidden_layers):
         super().__init__()
-        self.layer1 = Linear(2, hidden_layers)
-        self.layer2 = Linear(hidden_layers, hidden_layers)
-        self.layer3 = Linear(hidden_layers, 1)
+        raise NotImplementedError("Need to include this file from past assignment.")
 
     def forward(self, x):
         middle = [h.relu() for h in self.layer1.forward(x)]
@@ -42,14 +40,7 @@ class Linear(minitorch.Module):
             )
 
     def forward(self, inputs):
-        outputs = [b.value for b in self.bias]
-        
-        for i in range(len(inputs)):
-            for j in range(len(outputs)):
-                # y_j += x_i * w_ij
-                outputs[j] += self.weights[i][j].value * inputs[i]
-
-        return outputs
+        raise NotImplementedError("Need to include this file from past assignment.")
 
 
 def default_log_fn(epoch, total_loss, correct, losses):

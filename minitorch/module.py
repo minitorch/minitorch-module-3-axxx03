@@ -31,16 +31,11 @@ class Module:
 
     def train(self) -> None:
         """Set the mode of this module and all descendent modules to `train`."""
-        self.training = True
-        for module in self.modules():
-            module.train()
-
+        raise NotImplementedError("Need to include this file from past assignment.")
 
     def eval(self) -> None:
         """Set the mode of this module and all descendent modules to `eval`."""
-        self.training = False
-        for module in self.modules():
-            module.eval()
+        raise NotImplementedError("Need to include this file from past assignment.")
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
         """Collect all the parameters of this module and its descendents.
@@ -50,29 +45,11 @@ class Module:
             The name and `Parameter` of each ancestor parameter.
 
         """
-        def _named_parameters(module: Module, prefix: str = ""):
-            res = []
-            # self
-            for name, param in module._parameters.items():
-                if prefix:
-                    res.append((prefix + "." + name, param))
-                else:
-                    res.append((name, param))
-
-            # children
-            for name, module in module._modules.items():
-                if prefix:
-                    res.extend(_named_parameters(module, prefix + "." + name))
-                else:
-                    res.extend(_named_parameters(module, name))
-            return res
-        
-        return _named_parameters(self)
+        raise NotImplementedError("Need to include this file from past assignment.")
 
     def parameters(self) -> Sequence[Parameter]:
         """Enumerate over all the parameters of this module and its descendents."""
-        return [param for _, param in self.named_parameters()]
-
+        raise NotImplementedError("Need to include this file from past assignment.")
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """Manually add a parameter. Useful helper for scalar parameters.

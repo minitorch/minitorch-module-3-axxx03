@@ -1,8 +1,3 @@
-"""
-Be sure you have minitorch installed in you Virtual Env.
->>> pip install -Ue .
-"""
-
 import random
 
 import numba
@@ -24,9 +19,6 @@ def RParam(*shape, backend):
     return minitorch.Parameter(r)
 
 
-# python run_fast_tensor.py --BACKEND gpu --HIDDEN 100 --DATASET split --RATE 0.05
-# python run_fast_tensor.py --BACKEND cpu --HIDDEN 100 --DATASET split --RATE 0.05
-
 class Network(minitorch.Module):
     def __init__(self, hidden, backend):
         super().__init__()
@@ -37,10 +29,9 @@ class Network(minitorch.Module):
         self.layer3 = Linear(hidden, 1, backend)
 
     def forward(self, x):
-        x = self.layer1(x).relu()
-        x = self.layer2(x).relu()
-        x = self.layer3(x).sigmoid()
-        return x
+        # TODO: Implement for Task 3.5.
+        raise NotImplementedError("Need to implement for Task 3.5")
+
 
 class Linear(minitorch.Module):
     def __init__(self, in_size, out_size, backend):
@@ -52,15 +43,9 @@ class Linear(minitorch.Module):
         self.out_size = out_size
 
     def forward(self, x):
-        (batch_size, in_size) = x.shape
-        
-        # x_times_w = (x.view(batch_size, in_size, 1) * self.weights.value).sum(1)
-        # res = x_times_w.view(batch_size, self.out_size) + self.bias.value
-        
-        x_times_w = x.view(batch_size, in_size) @ self.weights.value
-        res = x_times_w.view(batch_size, self.out_size) + self.bias.value
-        
-        return res
+        # TODO: Implement for Task 3.5.
+        raise NotImplementedError("Need to implement for Task 3.5")
+
 
 class FastTrain:
     def __init__(self, hidden_layers, backend=FastTensorBackend):
